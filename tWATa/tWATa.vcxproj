@@ -111,6 +111,7 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="argparse.hpp" />
     <ClInclude Include="token.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

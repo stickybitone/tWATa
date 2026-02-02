@@ -163,14 +163,13 @@ TELEV getTokenElevationType(HANDLE hToken)
 	return telev;
 }
 
-void createProcessWithToken(HANDLE hToken, wchar_t cmd2[])
+void createProcessWithToken(HANDLE hToken, wchar_t cmd[])
 {
 	LPSTARTUPINFOW sinfo = new STARTUPINFOW();
 	sinfo->cb = sizeof(STARTUPINFOW);
 	sinfo->dwFlags = STARTF_USESHOWWINDOW;
 	sinfo->wShowWindow = 1;
 	PPROCESS_INFORMATION pinfo = new PROCESS_INFORMATION();
-	wchar_t cmd[] = L"C:\\Windows\\System32\\cmd.exe\0";
 	if (!CreateProcessWithTokenW(hToken, LOGON_WITH_PROFILE, NULL, cmd, NULL, NULL, NULL, sinfo, pinfo))
 	{
 		printf("[-] CreateProcessWithTokenW error: %d\n", GetLastError());
