@@ -25,7 +25,7 @@ std::wstring convert_to_wstring(const std::string& utf8)
 
 int main(int argc, char* argv[])
 {
-	argparse::ArgumentParser program("tWATA", "1.0.0");
+	argparse::ArgumentParser program("tWATA", "1.0.1");
 	program.add_argument("--pid")
 		.help("provide a pid to steal token from")
 		.default_value(0)
@@ -33,8 +33,6 @@ int main(int argc, char* argv[])
 	program.add_argument("--cmd")
 		.help("provide program to execute on behalf of the impersonated user")
 		.default_value(std::string("C:\\Windows\\System32\\cmd.exe"));
-	program.add_argument("--addr").help("provide an address with a shellcode")
-		.implicit_value(true);
 	program.add_argument("--enumerate").help("enumerate tokens").implicit_value(true);
 
 	try
@@ -54,8 +52,8 @@ int main(int argc, char* argv[])
 	}
 
 	int pid = program.get<int>("--pid");
+	
 	std::string cmd = program.get<std::string>("--cmd");
-	std::wstring wcmd (cmd.begin(), cmd.end());
 
 	HANDLE hProcessSnap;
 	hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -136,8 +134,10 @@ int main(int argc, char* argv[])
 	if (program.is_used("--pid"))
 	{
 		hToken = pid_token[pid];
+
 		if (program.is_used("--cmd"))
 		{
+			std::wstring wcmd(cmd.begin(), cmd.end());
 			std::vector<wchar_t> buffer(wcmd.begin(), wcmd.end());
 			buffer.push_back(L'\0');
 			wchar_t * cmd = buffer.data();
