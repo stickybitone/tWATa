@@ -125,8 +125,11 @@ int main(int argc, char* argv[])
 			std::list<TOKEN_INFORMATION> tokens = kv.second;
 			for (TOKEN_INFORMATION token : tokens)
 			{
-				wprintf(L"\t[%d] TokenType: %s\tImpersonationLevel: %s\tisElevated: %s\tElevationType: %s\tIntegrityLevel: %s\n",
+				if (!wcscmp(token.tokenElevationType.isElevated, L"TRUE"))
+				{
+					wprintf(L"\t\t[%d]\tTokenType: %s\tImpersonationLevel: %s\tisElevated: %s\tElevationType: %s\tIntegrityLevel: %s\n",
 					token.pid, token.tokenStatistics.tokenType, token.tokenStatistics.impersonationLevel, token.tokenElevationType.isElevated, token.tokenElevationType.elevationType, token.tokenIntegrityLevel.integrityLevel);
+				}
 			}
 		}
 	}
