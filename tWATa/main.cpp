@@ -18,14 +18,15 @@ struct TOKEN_INFORMATION
 	TELEV tokenElevationType;
 };
 
-std::wstring convert_to_wstring(const std::string& utf8)
-{
-
-}
+const char* version = "v1.0.1";
+const char* exec = "tWATA";
 
 int main(int argc, char* argv[])
 {
-	argparse::ArgumentParser program("tWATA", "1.0.1");
+	printf("%s %s\n\n", exec, version);
+
+	argparse::ArgumentParser program(exec, version);
+	
 	program.add_argument("--pid")
 		.help("provide a pid to steal token from")
 		.default_value(0)
